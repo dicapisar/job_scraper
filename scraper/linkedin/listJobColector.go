@@ -24,9 +24,9 @@ func (l *listJobCollector) GetJobList(search *domain.JobSearch) *[]JobInfoCollec
 	l.initializeNewListJobScraper(&jobInfoCollector)
 
 	countSearch := math.Trunc(float64(search.CountToFind / countPageIndex))
+	pageStartIndex := 25
 
 	for i := 0; i <= int(countSearch); i++ {
-		pageStartIndex := 25
 
 		url := generateUrlListJob(search, uint8(pageStartIndex))
 

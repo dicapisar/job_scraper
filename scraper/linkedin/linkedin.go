@@ -7,7 +7,7 @@ import (
 type Scraper struct {
 }
 
-func (s *Scraper) GenerateJobResults(search *domain.JobSearch) *[]domain.JobResult {
+func (s *Scraper) GenerateJobResults(search *domain.JobSearch) *[]JobDetailCollectorResult {
 
 	collectorListJob := listJobCollector{}
 	listJobCollectorResult := collectorListJob.GetJobList(search)
@@ -21,13 +21,13 @@ func (s *Scraper) GenerateJobResults(search *domain.JobSearch) *[]domain.JobResu
 		JobDetailCollectorResultList = append(JobDetailCollectorResultList, *jobDetailResult)
 	}
 
-	return nil
+	return &JobDetailCollectorResultList
 }
 
 func removeExcessResults(listJobCollectorResult *[]JobInfoCollectorResult, search *domain.JobSearch) {
 	countExcess := len(*listJobCollectorResult) - search.CountToFind
 
-	if countExcess == 0 {
+	if countExcess <= 0 {
 		return
 	}
 

@@ -11,7 +11,7 @@ func main() {
 
 	search := domain.JobSearch{
 		Title:       "Software Developer",
-		CountToFind: 20,
+		CountToFind: 30,
 		Location:    domain.Bogota,
 	}
 

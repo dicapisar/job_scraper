@@ -25,7 +25,7 @@ func (j *jobDetailCollector) GetDetailJob(result *JobInfoCollectorResult) *JobDe
 	err := j.collector.Visit(url)
 
 	if err != nil {
-		fmt.Printf("Error Visiting Url: %s", url)
+		fmt.Printf("Error Visiting Url: %s \n", url)
 	}
 
 	return &jobDetail
@@ -37,6 +37,11 @@ func (j *jobDetailCollector) initializeNewJobDetailScraper(jobDetail *JobDetailC
 
 	j.collector.OnHTML("body", func(h *colly.HTMLElement) {
 		jobDetail.Description = getDescriptionFromHTMLElement(h)
+		jobDetail.Company = getCompanyFromHTMLElement(h)
+		jobDetail.SeniorityLevel = getSeniorityLevel(h)
+		jobDetail.EmploymentType = getEmploymentType(h)
+		jobDetail.JobFunction = getJobFunction(h)
+		jobDetail.Industries = getIndustries(h)
 	})
 
 	j.collector.OnRequest(func(r *colly.Request) {
@@ -46,7 +51,7 @@ func (j *jobDetailCollector) initializeNewJobDetailScraper(jobDetail *JobDetailC
 	})
 
 	j.collector.OnError(func(r *colly.Response, e error) {
-		fmt.Printf("Error while scraping: %s\n", e.Error())
+		fmt.Printf("Error while scraping: %s \n", e.Error())
 	})
 }
 
@@ -54,7 +59,7 @@ func initialFillJobDetailFromJobInfoCollectorResult(jobDetail *JobDetailCollecto
 	jobDetail.Title = result.Title
 	jobDetail.Id = result.Id
 	jobDetail.DateAgo = result.DateAgo
-	jobDetail.Url = result.DateAgo
+	jobDetail.Url = result.Url
 }
 
 func generateUrlJobDetail(result *JobInfoCollectorResult) string {
@@ -64,28 +69,17 @@ func generateUrlJobDetail(result *JobInfoCollectorResult) string {
 func getDescriptionFromHTMLElement(h *colly.HTMLElement) string {
 	selection := h.DOM
 	descriptionSelection := selection.Find("div.show-more-less-html__markup")
-	descriptionSelection.ChildrenFiltered("br")
-	fmt.Println(descriptionSelection.Text())
 	descriptionText := strings.TrimSpace(descriptionSelection.Nodes[0].FirstChild.Data) + fmt.Sprintln()
 	description := descriptionSelection.Children()
 	i := 0
 	description.Each(func(_ int, s *goquery.Selection) {
 		for _, n := range s.Nodes {
-
 			descriptionText = descriptionText + getTextFromNode(n, h, s, i)
 			i = i + 1
-
 		}
 	})
 
-	/*
-		description = selection.Find("div.description__text").Text()
-		description = strings.TrimSpace(description)
-		description = strings.ReplaceAll(description, "Show more", "")
-		description = strings.ReplaceAll(description, "Show less", "")
-		description = strings.TrimSpace(description) */
-
-	return "description"
+	return descriptionText
 }
 
 func getTextFromNode(node *html.Node, h *colly.HTMLElement, s *goquery.Selection, i int) string {
@@ -112,28 +106,50 @@ func getTextFromNode(node *html.Node, h *colly.HTMLElement, s *goquery.Selection
 	case "strong":
 		htmlElement := colly.NewHTMLElementFromSelectionNode(h.Response, s, node, i)
 		return htmlElement.Text + fmt.Sprintln()
+	case "br":
+		return ""
+	case "em":
+		htmlElement := colly.NewHTMLElementFromSelectionNode(h.Response, s, node, i)
+		return htmlElement.Text + fmt.Sprintln()
 	default:
-		fmt.Println(node)
+		fmt.Printf("out-of-schema node %v \n", node)
 	}
 
 	return ""
 }
 
 func getCompanyFromHTMLElement(h *colly.HTMLElement) string {
-	return ""
+	selection := h.DOM
+	nameCompany := selection.Find("a.topcard__org-name-link").Text()
+	nameCompany = strings.TrimSpace(nameCompany)
+	return nameCompany
 }
 func getCountApplicantsFromHTMLElement(h *colly.HTMLElement) string {
 	return ""
 }
 func getSeniorityLevel(h *colly.HTMLElement) string {
-	return ""
+	return *getStringFromDescriptionJobCriteriaListByIndex(h, 0)
 }
 func getEmploymentType(h *colly.HTMLElement) string {
-	return ""
+	return *getStringFromDescriptionJobCriteriaListByIndex(h, 1)
 }
 func getJobFunction(h *colly.HTMLElement) string {
-	return ""
+	return *getStringFromDescriptionJobCriteriaListByIndex(h, 2)
 }
 func getIndustries(h *colly.HTMLElement) string {
-	return ""
+	return *getStringFromDescriptionJobCriteriaListByIndex(h, 3)
+}
+
+func getStringFromDescriptionJobCriteriaListByIndex(h *colly.HTMLElement, index int) *string {
+	selection := h.DOM
+	jobCriteriaNodeList := selection.Find("ul.description__job-criteria-list").Children().Nodes
+	textHtmlElement := ""
+	if len(jobCriteriaNodeList)-1 >= index {
+		node := jobCriteriaNodeList[index]
+		htmlElement := colly.NewHTMLElementFromSelectionNode(h.Response, selection, node, index)
+		resultSelection := htmlElement.ChildTexts("span.description__job-criteria-text")
+		textHtmlElement = strings.TrimSpace(resultSelection[index])
+	}
+
+	return &textHtmlElement
 }
