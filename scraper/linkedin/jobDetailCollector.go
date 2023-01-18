@@ -42,6 +42,7 @@ func (j *jobDetailCollector) initializeNewJobDetailScraper(jobDetail *JobDetailC
 		jobDetail.EmploymentType = getEmploymentType(h)
 		jobDetail.JobFunction = getJobFunction(h)
 		jobDetail.Industries = getIndustries(h)
+		jobDetail.Location = getLocation(h)
 	})
 
 	j.collector.OnRequest(func(r *colly.Request) {
@@ -71,6 +72,12 @@ func getDescriptionFromHTMLElement(h *colly.HTMLElement) string {
 	descriptionSelection := selection.Find("div.show-more-less-html__markup")
 	descriptionText := strings.TrimSpace(descriptionSelection.Nodes[0].FirstChild.Data) + fmt.Sprintln()
 	description := descriptionSelection.Children()
+
+	/* TODO: pendiente mejorar la toma de nodos, se estan quedando afuera los nodos timpo text
+	descriptionv2 := descriptionSelection.Nodes
+	fmt.Println(descriptionv2)
+	*/
+
 	i := 0
 	description.Each(func(_ int, s *goquery.Selection) {
 		for _, n := range s.Nodes {
@@ -124,18 +131,18 @@ func getCompanyFromHTMLElement(h *colly.HTMLElement) string {
 	nameCompany = strings.TrimSpace(nameCompany)
 	return nameCompany
 }
-func getCountApplicantsFromHTMLElement(h *colly.HTMLElement) string {
-	return ""
-}
 func getSeniorityLevel(h *colly.HTMLElement) string {
 	return *getStringFromDescriptionJobCriteriaListByIndex(h, 0)
 }
+
 func getEmploymentType(h *colly.HTMLElement) string {
 	return *getStringFromDescriptionJobCriteriaListByIndex(h, 1)
 }
+
 func getJobFunction(h *colly.HTMLElement) string {
 	return *getStringFromDescriptionJobCriteriaListByIndex(h, 2)
 }
+
 func getIndustries(h *colly.HTMLElement) string {
 	return *getStringFromDescriptionJobCriteriaListByIndex(h, 3)
 }
@@ -152,4 +159,11 @@ func getStringFromDescriptionJobCriteriaListByIndex(h *colly.HTMLElement, index 
 	}
 
 	return &textHtmlElement
+}
+
+func getLocation(h *colly.HTMLElement) string {
+	selection := h.DOM
+	location := selection.Find("span.topcard__flavor.topcard__flavor--bullet").Text()
+	location = strings.TrimSpace(location)
+	return location
 }

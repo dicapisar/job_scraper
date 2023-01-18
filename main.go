@@ -1,22 +1,8 @@
 package main
 
-import (
-	"fmt"
-	"github.com/dicapisar/job_scraper/domain"
-	"github.com/dicapisar/job_scraper/scraper/linkedin"
-)
+import "github.com/dicapisar/job_scraper/api"
 
 func main() {
-	linkedinScraper := linkedin.Scraper{}
-
-	search := domain.JobSearch{
-		Title:       "Software Developer",
-		CountToFind: 30,
-		Location:    domain.Bogota,
-	}
-
-	jobResults := linkedinScraper.GenerateJobResults(&search)
-
-	fmt.Println(len(*jobResults))
+	api.InitializeApi()
 
 }

@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	urlListJobs    = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=%s&position=1&pageNum=0&start=%d"
+	urlListJobs    = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=%s&position=1&pageNum=0&start=%d%s"
 	countPageIndex = 25
 )
 
@@ -95,5 +95,6 @@ func getDateAgoFromHTMLElement(h *colly.HTMLElement) string {
 
 func generateUrlListJob(search *domain.JobSearch, pageStartIndex uint8) string {
 	keyword := search.GetKeyword()
-	return fmt.Sprintf(urlListJobs, keyword, pageStartIndex)
+	location := search.GetLocation()
+	return fmt.Sprintf(urlListJobs, keyword, pageStartIndex, location)
 }
