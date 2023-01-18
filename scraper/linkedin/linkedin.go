@@ -7,21 +7,24 @@ import (
 type Scraper struct {
 }
 
-func (s *Scraper) GenerateJobResults(search *domain.JobSearch) *[]JobDetailCollectorResult {
+func (s *Scraper) GenerateJobResults(search *domain.JobSearch) *[]domain.Job {
 
 	collectorListJob := listJobCollector{}
 	listJobCollectorResult := collectorListJob.GetJobList(search)
 	removeExcessResults(listJobCollectorResult, search)
 
 	collectorDetailJob := jobDetailCollector{}
-	JobDetailCollectorResultList := make([]JobDetailCollectorResult, 0, 1)
+	//JobDetailCollectorResultList := make([]JobDetailCollectorResult, 0, 1)
+
+	jobs := make([]domain.Job, 0, 1)
 
 	for _, jobResult := range *listJobCollectorResult {
 		jobDetailResult := collectorDetailJob.GetDetailJob(&jobResult)
-		JobDetailCollectorResultList = append(JobDetailCollectorResultList, *jobDetailResult)
+		jobs = append(jobs, jobDetailResult.ParseToLinkedinJobModel())
+		//JobDetailCollectorResultList = append(JobDetailCollectorResultList, *jobDetailResult)
 	}
 
-	return &JobDetailCollectorResultList
+	return &jobs
 }
 
 func removeExcessResults(listJobCollectorResult *[]JobInfoCollectorResult, search *domain.JobSearch) {

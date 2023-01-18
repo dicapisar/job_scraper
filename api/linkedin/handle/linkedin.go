@@ -1,8 +1,10 @@
 package handle
 
 import (
+	"fmt"
 	"github.com/dicapisar/job_scraper/api/linkedin/dto/request"
 	"github.com/dicapisar/job_scraper/domain"
+	"github.com/dicapisar/job_scraper/infra"
 	"github.com/dicapisar/job_scraper/scraper/linkedin"
 	"github.com/gofiber/fiber/v2"
 )
@@ -27,6 +29,15 @@ func GenerateSearchHandle(c *fiber.Ctx) error {
 	jobSearch.ParseFromLinkedinSearch(&search)
 
 	result := scraper.GenerateJobResults(&jobSearch)
+
+	for _, job := range *result {
+
+		err = infra.DBRepository.CreateLinkedinJob(job.(*domain.LinkedinJob))
+
+		if err != nil {
+			fmt.Printf("error on saved job on database: %v", err.Error())
+		}
+	}
 
 	return c.Status(fiber.StatusOK).JSON(result)
 }

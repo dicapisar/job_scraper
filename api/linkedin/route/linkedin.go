@@ -6,6 +6,7 @@ import (
 )
 
 func GetRouter(app *fiber.App) fiber.Router {
+
 	linkedinRouteGroup := app.Group("/linkedin").Name("linkedinHandleRoute")
 	linkedinRouteGroup.Post("", handle.GenerateSearchHandle)
 
