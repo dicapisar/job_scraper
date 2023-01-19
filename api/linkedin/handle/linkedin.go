@@ -7,6 +7,7 @@ import (
 	"github.com/dicapisar/job_scraper/infra"
 	"github.com/dicapisar/job_scraper/scraper/linkedin"
 	"github.com/gofiber/fiber/v2"
+	"github.com/robfig/cron/v3"
 )
 
 func GenerateSearchHandle(c *fiber.Ctx) error {
@@ -30,6 +31,12 @@ func GenerateSearchHandle(c *fiber.Ctx) error {
 
 	result := scraper.GenerateJobResults(&jobSearch)
 
+	err = generateCron()
+
+	if err != nil {
+		fmt.Println("error generating cron")
+	}
+
 	for _, job := range *result {
 
 		err = infra.DBRepository.CreateLinkedinJob(job.(*domain.LinkedinJob))
@@ -40,4 +47,23 @@ func GenerateSearchHandle(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(result)
+}
+
+func generateCron() error {
+
+	c := cron.New(cron.WithSeconds())
+
+	addFunc, err := c.AddFunc("@every 1m", func() {
+		fmt.Println("every minute")
+	})
+
+	fmt.Println(addFunc) // guardar info
+
+	if err != nil {
+		return err
+	}
+
+	c.Start()
+
+	return nil
 }

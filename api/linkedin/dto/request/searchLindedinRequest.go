@@ -6,9 +6,11 @@ import (
 )
 
 type Search struct {
-	Title       string `json:"title" validate:"require, min=3, max=32"`
-	CountToFind int    `json:"countToFind" validate:"require"`
-	Location    string `json:"location" validate:"require, min=3, max=32"`
+	Title        string `json:"title" validate:"required,min=3,max=32"`
+	CountToFind  int    `json:"countToFind" validate:"required"`
+	Location     string `json:"location" validate:"required,min=3,max=32"`
+	Interval     uint8  `json:"interval" validate:"required,gte=1,lte=60"`
+	TypeInterval string `json:"type_interval" validate:"required"`
 }
 
 func (s *Search) Validate() []*share.ErrorResponse {
@@ -16,14 +18,23 @@ func (s *Search) Validate() []*share.ErrorResponse {
 
 	var errors []*share.ErrorResponse
 
-	err := validate.Struct(&s)
+	errValidate := validate.Struct(s)
 
-	if errors != nil {
-		for _, err := range err.(validator.ValidationErrors) {
+	if errValidate != nil {
+		for _, err := range errValidate.(validator.ValidationErrors) {
 			var element share.ErrorResponse
 			element.FailedField = err.StructNamespace()
 			element.Tag = err.Tag()
 			element.Value = err.Param()
+			element.TypeField = err.Kind().String()
+			errors = append(errors, &element)
+		}
+	} else {
+		if s.TypeInterval != "hour" && s.TypeInterval != "minute" && s.TypeInterval != "day" {
+			var element share.ErrorResponse
+			element.FailedField = "type_interval"
+			element.Tag = "value entered not allowed, try with 'hour' or 'minute' or 'day'"
+			element.Value = s.TypeInterval
 			errors = append(errors, &element)
 		}
 	}
