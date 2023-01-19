@@ -1,8 +1,9 @@
-package linkedin
+package collector
 
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/dicapisar/job_scraper/scraper/linkedin/result"
 	"github.com/gocolly/colly/v2"
 	"golang.org/x/net/html"
 	"strings"
@@ -10,17 +11,17 @@ import (
 
 const urlDetailJob = "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/%s"
 
-type jobDetailCollector struct {
+type JobDetailCollector struct {
 	collector *colly.Collector
 }
 
-func (j *jobDetailCollector) GetDetailJob(result *JobInfoCollectorResult) *JobDetailCollectorResult {
+func (j *JobDetailCollector) GetDetailJob(infoCollectorResult *result.JobInfoCollectorResult) *result.JobDetailCollectorResult {
 
-	jobDetail := JobDetailCollectorResult{}
-	initialFillJobDetailFromJobInfoCollectorResult(&jobDetail, result)
+	jobDetail := result.JobDetailCollectorResult{}
+	initialFillJobDetailFromJobInfoCollectorResult(&jobDetail, infoCollectorResult)
 	j.initializeNewJobDetailScraper(&jobDetail)
 
-	url := generateUrlJobDetail(result)
+	url := generateUrlJobDetail(infoCollectorResult)
 
 	err := j.collector.Visit(url)
 
@@ -31,7 +32,7 @@ func (j *jobDetailCollector) GetDetailJob(result *JobInfoCollectorResult) *JobDe
 	return &jobDetail
 }
 
-func (j *jobDetailCollector) initializeNewJobDetailScraper(jobDetail *JobDetailCollectorResult) {
+func (j *JobDetailCollector) initializeNewJobDetailScraper(jobDetail *result.JobDetailCollectorResult) {
 	c := colly.NewCollector(colly.AllowedDomains("www.linkedin.com", "linkedin.com"))
 	j.collector = c
 
@@ -56,70 +57,66 @@ func (j *jobDetailCollector) initializeNewJobDetailScraper(jobDetail *JobDetailC
 	})
 }
 
-func initialFillJobDetailFromJobInfoCollectorResult(jobDetail *JobDetailCollectorResult, result *JobInfoCollectorResult) {
+func initialFillJobDetailFromJobInfoCollectorResult(jobDetail *result.JobDetailCollectorResult, result *result.JobInfoCollectorResult) {
 	jobDetail.Title = result.Title
 	jobDetail.Id = result.Id
 	jobDetail.DateAgo = result.DateAgo
 	jobDetail.Url = result.Url
 }
 
-func generateUrlJobDetail(result *JobInfoCollectorResult) string {
+func generateUrlJobDetail(result *result.JobInfoCollectorResult) string {
 	return fmt.Sprintf(urlDetailJob, result.Id)
 }
 
 func getDescriptionFromHTMLElement(h *colly.HTMLElement) string {
 	selection := h.DOM
 	descriptionSelection := selection.Find("div.show-more-less-html__markup")
-	descriptionText := strings.TrimSpace(descriptionSelection.Nodes[0].FirstChild.Data) + fmt.Sprintln()
-	description := descriptionSelection.Children()
-
-	/* TODO: pendiente mejorar la toma de nodos, se estan quedando afuera los nodos timpo text
-	descriptionv2 := descriptionSelection.Nodes
-	fmt.Println(descriptionv2)
-	*/
-
-	i := 0
-	description.Each(func(_ int, s *goquery.Selection) {
-		for _, n := range s.Nodes {
-			descriptionText = descriptionText + getTextFromNode(n, h, s, i)
-			i = i + 1
-		}
-	})
+	descriptionNodes := descriptionSelection.Nodes[0].FirstChild
+	descriptionText := generateTextFromNode(descriptionNodes, h, descriptionSelection)
 
 	return descriptionText
 }
 
+func generateTextFromNode(n *html.Node, h *colly.HTMLElement, s *goquery.Selection) string {
+
+	if n == nil {
+		return ""
+	}
+
+	if n.Type == html.TextNode {
+		return fmt.Sprintf("%s \n %v", strings.TrimSpace(n.Data), generateTextFromNode(n.NextSibling, h, s))
+	}
+
+	htmlElement := getTextFromNode(n, h, s, 0) //colly.NewHTMLElementFromSelectionNode(h.Response, s, n, 0).Text
+
+	return fmt.Sprintf("%s \n %v", htmlElement, generateTextFromNode(n.NextSibling, h, s))
+
+}
+
 func getTextFromNode(node *html.Node, h *colly.HTMLElement, s *goquery.Selection, i int) string {
 
-	switch node.Data {
-	case "p":
-		htmlElement := colly.NewHTMLElementFromSelectionNode(h.Response, s, node, i)
-		return htmlElement.Text + fmt.Sprintln()
-	case "ul":
-		stringUl := ""
-		htmlElement := colly.NewHTMLElementFromSelectionNode(h.Response, s, node, i)
-		list := htmlElement.DOM.Children()
-		i := 0
-		list.Each(func(_ int, s *goquery.Selection) {
-			for _, n := range s.Nodes {
-				text := getTextFromNode(n, h, s, i)
-				stringUl = stringUl + fmt.Sprintln() + text
-			}
-		})
-		return stringUl + fmt.Sprintln()
-	case "li":
-		htmlElement := colly.NewHTMLElementFromSelectionNode(h.Response, s, node, i)
-		return htmlElement.Text
-	case "strong":
-		htmlElement := colly.NewHTMLElementFromSelectionNode(h.Response, s, node, i)
-		return htmlElement.Text + fmt.Sprintln()
-	case "br":
-		return ""
-	case "em":
-		htmlElement := colly.NewHTMLElementFromSelectionNode(h.Response, s, node, i)
-		return htmlElement.Text + fmt.Sprintln()
-	default:
-		fmt.Printf("out-of-schema node %v \n", node)
+	if node != nil {
+		switch node.Data {
+		case "p":
+			htmlElement := colly.NewHTMLElementFromSelectionNode(h.Response, s, node, i)
+			return strings.TrimSpace(htmlElement.Text) + "\n"
+		case "ul":
+			liText := getTextFromNode(node.FirstChild, h, s, i)
+			return liText + "\n"
+		case "li":
+			htmlElement := colly.NewHTMLElementFromSelectionNode(h.Response, s, node, i)
+			return strings.TrimSpace(htmlElement.Text) + "\n" + getTextFromNode(node.NextSibling, h, s, i)
+		case "strong":
+			htmlElement := colly.NewHTMLElementFromSelectionNode(h.Response, s, node, i)
+			return strings.TrimSpace(htmlElement.Text) + "\n"
+		case "br":
+			return ""
+		case "em":
+			htmlElement := colly.NewHTMLElementFromSelectionNode(h.Response, s, node, i)
+			return strings.TrimSpace(htmlElement.Text) + "\n"
+		default:
+			fmt.Printf("out-of-schema node %v \n", node)
+		}
 	}
 
 	return ""
@@ -131,6 +128,7 @@ func getCompanyFromHTMLElement(h *colly.HTMLElement) string {
 	nameCompany = strings.TrimSpace(nameCompany)
 	return nameCompany
 }
+
 func getSeniorityLevel(h *colly.HTMLElement) string {
 	return *getStringFromDescriptionJobCriteriaListByIndex(h, 0)
 }

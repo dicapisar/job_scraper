@@ -1,4 +1,4 @@
-package linkedin
+package result
 
 import "github.com/dicapisar/job_scraper/domain"
 

@@ -1,4 +1,4 @@
-package linkedin
+package result
 
 type JobInfoCollectorResult struct {
 	Title   string

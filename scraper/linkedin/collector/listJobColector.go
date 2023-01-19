@@ -1,8 +1,9 @@
-package linkedin
+package collector
 
 import (
 	"fmt"
 	"github.com/dicapisar/job_scraper/domain"
+	"github.com/dicapisar/job_scraper/scraper/linkedin/result"
 	"github.com/dicapisar/job_scraper/util"
 	"github.com/gocolly/colly/v2"
 	"math"
@@ -14,13 +15,13 @@ const (
 	countPageIndex = 25
 )
 
-type listJobCollector struct {
+type ListJobCollector struct {
 	collector *colly.Collector
 }
 
-func (l *listJobCollector) GetJobList(search *domain.JobSearch) *[]JobInfoCollectorResult {
+func (l *ListJobCollector) GetJobList(search *domain.JobSearch) *[]result.JobInfoCollectorResult {
 
-	jobInfoCollector := make([]JobInfoCollectorResult, 0, 1)
+	jobInfoCollector := make([]result.JobInfoCollectorResult, 0, 1)
 	l.initializeNewListJobScraper(&jobInfoCollector)
 
 	countSearch := math.Trunc(float64(search.CountToFind / countPageIndex))
@@ -43,9 +44,9 @@ func (l *listJobCollector) GetJobList(search *domain.JobSearch) *[]JobInfoCollec
 	return &jobInfoCollector
 }
 
-func (l *listJobCollector) initializeNewListJobScraper(jobInfoCollectorList *[]JobInfoCollectorResult) {
+func (l *ListJobCollector) initializeNewListJobScraper(jobInfoCollectorList *[]result.JobInfoCollectorResult) {
 
-	jobInfoCollectorFound := JobInfoCollectorResult{}
+	jobInfoCollectorFound := result.JobInfoCollectorResult{}
 
 	c := colly.NewCollector(colly.AllowedDomains("www.linkedin.com", "linkedin.com"))
 
@@ -58,7 +59,7 @@ func (l *listJobCollector) initializeNewListJobScraper(jobInfoCollectorList *[]J
 		jobInfoCollectorFound.DateAgo = getDateAgoFromHTMLElement(h)
 
 		*jobInfoCollectorList = append(*jobInfoCollectorList, jobInfoCollectorFound)
-		jobInfoCollectorFound = JobInfoCollectorResult{}
+		jobInfoCollectorFound = result.JobInfoCollectorResult{}
 	})
 
 	c.OnRequest(func(r *colly.Request) {
