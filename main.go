@@ -2,9 +2,9 @@ package main
 
 import (
 	"github.com/dicapisar/job_scraper/api"
-	"github.com/dicapisar/job_scraper/database"
 	"github.com/dicapisar/job_scraper/domain"
 	"github.com/dicapisar/job_scraper/infra"
+	"github.com/dicapisar/job_scraper/infra/database"
 	repository2 "github.com/dicapisar/job_scraper/repository"
 	"github.com/joho/godotenv"
 	"log"
