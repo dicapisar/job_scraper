@@ -7,3 +7,16 @@
 3. ``` docker-compose -p "job_scraper" build ```
 4. ``` docker-compose up -d```
 
+End points
+
+1. Linkedin
+
+```
+curl --location --request POST 'http://localhost:3000/linkedin' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "title": "Developer Java", // title job
+    "countToFind": 10, // results count that you want to save on database
+    "location": "Colombia" // name location: Country or city (Bogotá, Colombia)
+}'
+```
