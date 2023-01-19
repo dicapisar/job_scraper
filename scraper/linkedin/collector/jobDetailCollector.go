@@ -1,8 +1,9 @@
-package linkedin
+package collector
 
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/dicapisar/job_scraper/scraper/linkedin/result"
 	"github.com/gocolly/colly/v2"
 	"golang.org/x/net/html"
 	"strings"
@@ -10,17 +11,17 @@ import (
 
 const urlDetailJob = "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/%s"
 
-type jobDetailCollector struct {
+type JobDetailCollector struct {
 	collector *colly.Collector
 }
 
-func (j *jobDetailCollector) GetDetailJob(result *JobInfoCollectorResult) *JobDetailCollectorResult {
+func (j *JobDetailCollector) GetDetailJob(infoCollectorResult *result.JobInfoCollectorResult) *result.JobDetailCollectorResult {
 
-	jobDetail := JobDetailCollectorResult{}
-	initialFillJobDetailFromJobInfoCollectorResult(&jobDetail, result)
+	jobDetail := result.JobDetailCollectorResult{}
+	initialFillJobDetailFromJobInfoCollectorResult(&jobDetail, infoCollectorResult)
 	j.initializeNewJobDetailScraper(&jobDetail)
 
-	url := generateUrlJobDetail(result)
+	url := generateUrlJobDetail(infoCollectorResult)
 
 	err := j.collector.Visit(url)
 
@@ -31,7 +32,7 @@ func (j *jobDetailCollector) GetDetailJob(result *JobInfoCollectorResult) *JobDe
 	return &jobDetail
 }
 
-func (j *jobDetailCollector) initializeNewJobDetailScraper(jobDetail *JobDetailCollectorResult) {
+func (j *JobDetailCollector) initializeNewJobDetailScraper(jobDetail *result.JobDetailCollectorResult) {
 	c := colly.NewCollector(colly.AllowedDomains("www.linkedin.com", "linkedin.com"))
 	j.collector = c
 
@@ -56,14 +57,14 @@ func (j *jobDetailCollector) initializeNewJobDetailScraper(jobDetail *JobDetailC
 	})
 }
 
-func initialFillJobDetailFromJobInfoCollectorResult(jobDetail *JobDetailCollectorResult, result *JobInfoCollectorResult) {
+func initialFillJobDetailFromJobInfoCollectorResult(jobDetail *result.JobDetailCollectorResult, result *result.JobInfoCollectorResult) {
 	jobDetail.Title = result.Title
 	jobDetail.Id = result.Id
 	jobDetail.DateAgo = result.DateAgo
 	jobDetail.Url = result.Url
 }
 
-func generateUrlJobDetail(result *JobInfoCollectorResult) string {
+func generateUrlJobDetail(result *result.JobInfoCollectorResult) string {
 	return fmt.Sprintf(urlDetailJob, result.Id)
 }
 
